@@ -1,5 +1,5 @@
 
-======================================== Description of modifications ==================================================
+=== Description of modifications ===
 
 1. Renamed mysearch.module.php to mysearch.module.
 2. Created mysearch.info file.
@@ -13,14 +13,14 @@
 6. Is displayed on the screen via a standard feature theming theme_item_list ()
    function included in mysearch_output ($ items, $ attributes).
 
-========================================== Additional functionality ====================================================
+=== Additional functionality ===
 
 7. Creating a block with the search form where you can specify the Number of items displayed on the search page
    (When you install the module without changing the unit configuration 7 elements).
    To do this, the files are created in addition mysearch.install and block.inc.
 
 
-================================================== Using ===============================================================
+=== Using ===
 
 8.  1. Enable module.
     2. On the blocks administration page to configure the unit simple search form
