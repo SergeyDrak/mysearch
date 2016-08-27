@@ -1,0 +1,5 @@
+name = Simple search module
+description = Simple search module directly from the database.
+core = 7.x
+package = "FFW TEST"
+dependencies[] = views

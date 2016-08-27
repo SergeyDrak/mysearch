@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * @file
+ * Implementation of a simple search with backlight.
+ */
+
+/**
+ * Add custom css for module
+ */
+drupal_add_css(drupal_get_path('module', 'mysearch') . '/css/mysearch.css');
+
+/**
+ * Turning to the implementation of block file.
+ */
+module_load_include('inc', 'mysearch', '/inc/block');
+
+/**
+ * Implements hook_help().
+ */
+function mysearch_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#mysearch":
+      $output = file_get_contents(drupal_get_path('module', 'mysearch') . '/README.txt');
+      return '<pre>' . check_plain($output) . '</pre>';
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_permission().
+ */
+function mysearch_permission() {
+  return array(
+    'access mysearch' => array(
+      'title' => t('Access My Search'),
+      'description' => t('Allows a user to access search results'),
+    )
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function mysearch_menu() {
+  $item = array(
+    'title arguments' => array(1),
+    'title callback' => 'mysearch_title_callback',
+    'page callback' => 'mysearch_searchpage',
+    'page arguments' => array(1, 2),
+    'access arguments' => array('access mysearch'),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+  $items['mysearch/%'] = $item;
+  $items['mysearch/%/%'] = $item;
+  return $items;
+}
+
+/**
+ * Formation of the title.
+ * @return null|string
+ */
+function mysearch_title_callback() {
+  return t('Search results for " @searchterm "', array(
+    '@searchterm' => arg(1),
+  ));
+}
+
+/**
+ * Page callback mysearch_searchpage().
+ * @param $searchterm
+ * @param $count
+ * @return string
+ */
+function mysearch_searchpage($searchterm, $count) {
+  $count = empty(intval($count)) ? variable_get('mysearch_coll') : abs(intval($count));
+  $or = db_or();
+  $or->condition('b.body_value', '%' . db_like($searchterm) . '%', 'LIKE');
+  $or->condition('n.title', '%' . db_like($searchterm) . '%', 'LIKE');
+  $query = db_select('node', 'n')
+    ->extend('PagerDefault')
+    ->limit($count);
+  $query->join('field_data_body', 'b', 'n.nid = b.entity_id');
+  $query->fields('n', ['nid', 'title']);
+  $query->fields('b', ['body_value']);
+  $search_results = $query
+    ->condition($or)
+    ->execute();
+  $attributes = [
+    'id' => 'my_search',
+    'class' => ['my-search-results'],
+  ];
+  $items = [];
+  while ($record = $search_results->fetchAssoc()) {
+    $items[] = [
+      'id' => 'node_' . $record['nid'],
+      'data' => l($record['title'], 'node/' . $record['nid'], ['attributes' => ['title' => $record['title']]]) . '<div class="body-value">' . mysearch_body_lighting_trimming($record['body_value'], $searchterm) . '</div>',
+      'class' => ['node-' . $record['nid']],
+    ];
+  }
+  return mysearch_output($items, $attributes);
+}
+
+/**
+ * Is displayed on the screen via a standard feature theming theme_item_list ()
+ * function included in mysearch_output().
+ * @param $items
+ * @param $attributes
+ * @return string
+ */
+function mysearch_output($items, $attributes) {
+  $title = drupal_get_title();
+  $output = theme_item_list([
+    'items' => $items,
+    'title' => $title,
+    'type' => 'ul',
+    'attributes' => $attributes
+  ]);
+  $output .= empty($items) ? t('Nothing was found.') : theme('pager');
+  return $output;
+}
+
+/**
+ * Implementation of the backlight search tags.
+ * @param $search
+ * @param $term
+ * @return mixed|string
+ */
+function mysearch_body_lighting_trimming($search, $term) {
+  $pattern = "/((?:^|>)[^<]*)(" . $term . ")/si";
+  $replace = '$1<b class="lighting">$2</b>';
+  $text = preg_replace($pattern, $replace, $search);
+
+  $alter = array(
+    'max_length' => 500,
+    'word_boundary' => TRUE,
+    'ellipsis' => TRUE,
+    'html' => TRUE,
+  );
+  return views_trim_text($alter, $text);
+}

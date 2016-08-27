@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Identification and removal of the global variable number of elements in the
+ * installation of the module uninstallation.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function mysearch_install() {
+  variable_set('mysearch_coll', 7);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mysearch_uninstall() {
+  variable_del('mysearch');
+}
